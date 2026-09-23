@@ -298,7 +298,7 @@ export default function Home() {
       </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
             <div className="text-4xl mb-4">💬</div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">AI Chat Assistant</h3>
@@ -332,6 +332,18 @@ export default function Home() {
               className="block w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors text-center"
             >
               Open GBrain Chat
+            </Link>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
+            <div className="text-4xl mb-4">📡</div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Official Feeds</h3>
+            <p className="text-gray-600 mb-4">County social media accounts, RSS feeds, and data-center resource links.</p>
+            <Link
+              href="/feeds"
+              className="block w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors text-center"
+            >
+              View Feeds
             </Link>
           </div>
         </div>
