@@ -5,8 +5,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Vance County Minutes Chat',
-  description: 'AI-powered chat interface for Vance County Board of Commissioners meeting minutes',
+  title: 'Loudoun County Data Center Wiki',
+  description: 'AI-powered knowledge base for Loudoun County data center community and environmental impacts',
 };
 
 export default function RootLayout({
