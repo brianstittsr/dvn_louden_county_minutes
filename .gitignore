@@ -12,7 +12,6 @@ out/
 downloads/
 data/
 wiki/
-gbrain/import/
 
 # GBrain project docs are kept
 !gbrain/CATEGORIES.md

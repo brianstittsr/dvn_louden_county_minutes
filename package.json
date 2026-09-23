@@ -14,7 +14,8 @@
     "gbrain:crawl": "tsx scripts/gbrain-crawl.ts",
     "gbrain:categories": "tsx scripts/gbrain-categories.ts",
     "populate:loudoun": "tsx scripts/populate-loudoun-data.ts",
-    "extract:pdfs": "tsx scripts/extract-pdfs.ts"
+    "extract:pdfs": "tsx scripts/extract-pdfs.ts",
+    "extract:x": "tsx scripts/extract-x-feeds.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.65",
