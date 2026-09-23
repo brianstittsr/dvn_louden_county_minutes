@@ -6,7 +6,7 @@ export interface DocumentChunk {
   id: string;
   documentId: string;
   title: string;
-  year: string;
+  category: string;
   content: string;
   embedding: number[];
 }
@@ -17,60 +17,64 @@ export class VectorStore {
 
   async indexDocuments(documents: WikiDocument[]): Promise<void> {
     this.chunks = [];
-    
+
     for (const doc of documents) {
-      // Create multiple chunk types for better retrieval
-      const chunksToEmbed: { id: string; content: string; metadata: any }[] = [];
-      
-      // 1. Full content (for comprehensive context)
+      const chunksToEmbed: { id: string; content: string }[] = [];
+
       chunksToEmbed.push({
         id: `${doc.id}-full`,
-        content: `Meeting: ${doc.title}\nDate: ${doc.meetingDate}\nYear: ${doc.year}\n\nSummary: ${doc.summary}\n\nFull Content:\n${doc.content.slice(0, 2000)}`,
-        metadata: { type: 'full', doc }
+        content: `Page: ${doc.title}\nURL: ${doc.url}\nCategory: ${doc.category}\n\nSummary: ${doc.summary}\n\nContent:\n${doc.content.slice(0, 2000)}`,
       });
-      
-      // 2. Key decisions (if any)
-      if (doc.keyDecisions && doc.keyDecisions.length > 0) {
+
+      if (doc.dataCenterProjects && doc.dataCenterProjects.length > 0) {
         chunksToEmbed.push({
-          id: `${doc.id}-decisions`,
-          content: `Meeting: ${doc.title}\nDate: ${doc.meetingDate}\nKey Decisions:\n${doc.keyDecisions.map(d => `- ${d}`).join('\n')}`,
-          metadata: { type: 'decisions', doc }
+          id: `${doc.id}-projects`,
+          content: `Page: ${doc.title}\nURL: ${doc.url}\nData Center Projects:\n${doc.dataCenterProjects.map(p => `- ${p}`).join('\n')}`,
         });
       }
-      
-      // 3. Topics (if any)
-      if (doc.topics && doc.topics.length > 0) {
+
+      if (doc.environmentalConcerns && doc.environmentalConcerns.length > 0) {
         chunksToEmbed.push({
-          id: `${doc.id}-topics`,
-          content: `Meeting: ${doc.title}\nDate: ${doc.meetingDate}\nTopics Discussed:\n${doc.topics.map(t => `- ${t}`).join('\n')}`,
-          metadata: { type: 'topics', doc }
+          id: `${doc.id}-environmental`,
+          content: `Page: ${doc.title}\nURL: ${doc.url}\nEnvironmental Concerns:\n${doc.environmentalConcerns.map(c => `- ${c}`).join('\n')}`,
         });
       }
-      
-      // 4. Content sections (split by headers)
+
+      if (doc.communityImpacts && doc.communityImpacts.length > 0) {
+        chunksToEmbed.push({
+          id: `${doc.id}-community`,
+          content: `Page: ${doc.title}\nURL: ${doc.url}\nCommunity Impacts:\n${doc.communityImpacts.map(i => `- ${i}`).join('\n')}`,
+        });
+      }
+
+      if (doc.stakeholders && doc.stakeholders.length > 0) {
+        chunksToEmbed.push({
+          id: `${doc.id}-stakeholders`,
+          content: `Page: ${doc.title}\nURL: ${doc.url}\nStakeholders:\n${doc.stakeholders.map(s => `- ${s}`).join('\n')}`,
+        });
+      }
+
       const sections = this.splitByHeaders(doc.content);
       for (let i = 0; i < sections.length; i++) {
         if (sections[i].length > 50) {
           chunksToEmbed.push({
             id: `${doc.id}-section-${i}`,
-            content: `Meeting: ${doc.title}\nDate: ${doc.meetingDate}\nSection: ${sections[i].slice(0, 1000)}`,
-            metadata: { type: 'section', doc }
+            content: `Page: ${doc.title}\nURL: ${doc.url}\nSection: ${sections[i].slice(0, 1000)}`,
           });
         }
       }
-      
-      // Generate embeddings for all chunks
+
       for (const chunk of chunksToEmbed) {
         const { embedding } = await embed({
           model: openai.embedding(this.embeddingModel),
           value: chunk.content,
         });
-        
+
         this.chunks.push({
           id: chunk.id,
           documentId: doc.id,
           title: doc.title,
-          year: doc.year,
+          category: doc.category,
           content: chunk.content,
           embedding,
         });
@@ -78,23 +82,11 @@ export class VectorStore {
     }
   }
 
-  private splitText(text: string, chunkSize: number): string[] {
-    const chunks: string[] = [];
-    const words = text.split(/\s+/);
-    
-    for (let i = 0; i < words.length; i += chunkSize) {
-      chunks.push(words.slice(i, i + chunkSize).join(' '));
-    }
-    
-    return chunks;
-  }
-
   private splitByHeaders(text: string): string[] {
-    // Split content by markdown headers
     const sections: string[] = [];
     const lines = text.split('\n');
     let currentSection = '';
-    
+
     for (const line of lines) {
       if (line.match(/^#{2,3}\s/)) {
         if (currentSection.trim()) {
@@ -105,11 +97,11 @@ export class VectorStore {
         currentSection += line + '\n';
       }
     }
-    
+
     if (currentSection.trim()) {
       sections.push(currentSection.trim());
     }
-    
+
     return sections;
   }
 
@@ -125,7 +117,7 @@ export class VectorStore {
     }));
 
     similarities.sort((a, b) => b.similarity - a.similarity);
-    
+
     return similarities.slice(0, topK).map(s => s.chunk);
   }
 

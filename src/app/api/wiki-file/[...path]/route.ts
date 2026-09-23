@@ -55,7 +55,7 @@ export async function GET(
   </style>
 </head>
 <body>
-  <a href="/issues" class="back-link">← Back to Issues</a>
+  <a href="/issues" class="back-link">← Back to Pages</a>
   ${content
     .replace(/^# (.+)$/gm, '<h1>$1</h1>')
     .replace(/^## (.+)$/gm, '<h2>$1</h2>')

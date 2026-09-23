@@ -9,50 +9,27 @@ interface Message {
   content: string;
 }
 
-const actions2010 = [
+const dataCenterTopics = [
   {
-    category: 'Infrastructure',
-    items: [
-      'Water system improvements and expansion',
-      'Road maintenance and paving projects',
-      'Facility upgrades for county buildings',
-    ],
-    icon: '🏗️',
+    category: 'Environmental',
+    items: ['Power and energy use', 'Water consumption', 'Noise and emissions', 'Habitat and conservation'],
+    icon: '�',
   },
   {
-    category: 'Public Safety',
-    items: [
-      'Emergency services enhancements',
-      'Law enforcement equipment upgrades',
-      'Fire department support initiatives',
-    ],
-    icon: '🚔',
+    category: 'Community',
+    items: ['Traffic and transportation', 'Jobs and tax revenue', 'Land use and zoning', 'Quality of life'],
+    icon: '🏘️',
   },
   {
-    category: 'Economic Development',
-    items: [
-      'Business recruitment and retention',
-      'Industrial park development',
-      'Tourism promotion activities',
-    ],
-    icon: '📈',
+    category: 'Governance',
+    items: ['Board decisions and votes', 'Public hearings', 'Permits and approvals', 'FOIA and records'],
+    icon: '🏛️',
   },
   {
-    category: 'Community Services',
-    items: [
-      'Youth development programs',
-      'Senior citizen support services',
-      'Health and wellness initiatives',
-    ],
-    icon: '👥',
+    category: 'Projects',
+    items: ['New data center proposals', 'Existing facilities', 'Expansion plans', 'Infrastructure upgrades'],
+    icon: '�',
   },
-];
-
-const stats2010 = [
-  { label: 'Meetings Held', value: '24+', icon: '📅' },
-  { label: 'Resolutions Passed', value: '45+', icon: '📋' },
-  { label: 'Budget Allocated', value: '$12M+', icon: '💰' },
-  { label: 'Projects Approved', value: '30+', icon: '🎯' },
 ];
 
 export default function Home() {
@@ -103,7 +80,7 @@ export default function Home() {
           if (done) break;
           const chunk = decoder.decode(value);
           assistantContent += chunk;
-          
+
           setMessages((prev) => {
             const newMessages = [...prev];
             const lastMessage = newMessages[newMessages.length - 1];
@@ -141,7 +118,7 @@ export default function Home() {
     setTimeout(() => {
       const syntheticEvent = {
         preventDefault: () => {},
-      } as any;
+      } as unknown as React.FormEvent;
       handleSubmit(syntheticEvent);
     }, 100);
   };
@@ -149,31 +126,29 @@ export default function Home() {
   if (showChat) {
     return (
       <main className="flex flex-col h-screen bg-gray-50">
-        {/* Header */}
         <header className="bg-gradient-to-r from-blue-900 to-blue-700 text-white px-4 py-3 sm:px-6 shadow-lg">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold">Vance County Minutes Chat</h1>
-              <p className="text-sm text-blue-200 mt-1">Ask questions about Board of Commissioners meeting minutes</p>
+              <h1 className="text-xl sm:text-2xl font-bold">Loudoun County Data Center Chat</h1>
+              <p className="text-sm text-blue-200 mt-1">Ask questions about data center community and environmental impacts</p>
             </div>
             <div className="flex gap-2">
-              <button 
+              <button
                 onClick={() => setShowChat(false)}
                 className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg font-medium text-sm transition-colors"
               >
                 ← Back to Dashboard
               </button>
-              <Link 
-                href="/issues" 
+              <Link
+                href="/issues"
                 className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg font-medium text-sm transition-colors"
               >
-                Browse Issues
+                Browse Pages
               </Link>
             </div>
           </div>
         </header>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
           <div className="max-w-4xl mx-auto space-y-4">
             {messages.length === 0 && (
@@ -183,8 +158,8 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                   </svg>
                 </div>
-                <h2 className="text-xl font-semibold text-gray-700 mb-2">Welcome to Vance County Minutes Chat</h2>
-                <p className="text-gray-500">Ask any question about the Board of Commissioners meeting minutes</p>
+                <h2 className="text-xl font-semibold text-gray-700 mb-2">Welcome to the Loudoun County Data Center Chat</h2>
+                <p className="text-gray-500">Ask any question about data center community and environmental impacts.</p>
               </div>
             )}
 
@@ -215,7 +190,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Input */}
         <div className="bg-white border-t border-gray-200 px-4 py-4 sm:px-6 shadow-lg">
           <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
             <div className="flex gap-2">
@@ -223,7 +197,7 @@ export default function Home() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask a question about the meeting minutes..."
+                placeholder="Ask a question about data centers in Loudoun County..."
                 disabled={isLoading}
                 className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
@@ -243,65 +217,51 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* Hero Section */}
       <header className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 text-white shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold">Vance County Board of Commissioners</h1>
-              <p className="text-blue-200 mt-2 text-lg">Meeting Minutes Archive & AI Analysis</p>
+              <h1 className="text-3xl sm:text-4xl font-bold">Loudoun County Data Center Wiki</h1>
+              <p className="text-blue-200 mt-2 text-lg">Community & Environmental Impact Knowledge Base</p>
             </div>
             <div className="flex gap-3">
-              <button 
+              <button
                 onClick={() => setShowChat(true)}
                 className="px-6 py-3 bg-white text-blue-900 rounded-lg hover:bg-blue-50 font-semibold shadow-lg transition-all hover:shadow-xl"
               >
                 💬 Start Chat
               </button>
-              <Link 
-                href="/issues" 
+              <Link
+                href="/gbrain-chat"
                 className="px-6 py-3 bg-blue-600/50 hover:bg-blue-600/70 text-white rounded-lg font-semibold transition-colors border border-blue-400"
               >
-                📋 Browse Issues
+                🧠 GBrain Q&A
               </Link>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Featured Year - 2010 */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-500 px-6 py-4">
             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-              <span className="text-3xl">📅</span>
-              2010 Year in Review - Actions & Accomplishments
+              <span className="text-3xl">�</span>
+              Data Center Research Topics
             </h2>
           </div>
-          
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-gradient-to-b from-orange-50 to-white">
-            {stats2010.map((stat, index) => (
-              <div key={index} className="bg-white rounded-xl p-4 shadow-md border border-orange-100 text-center">
-                <div className="text-3xl mb-2">{stat.icon}</div>
-                <div className="text-2xl font-bold text-orange-600">{stat.value}</div>
-                <div className="text-sm text-gray-600">{stat.label}</div>
-              </div>
-            ))}
-          </div>
 
-          {/* Action Categories */}
           <div className="p-6">
-            <h3 className="text-xl font-semibold text-gray-800 mb-6">Key Action Areas</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-6">Key Areas of Focus</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {actions2010.map((action, index) => (
+              {dataCenterTopics.map((topic, index) => (
                 <div key={index} className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-5 shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="text-2xl">{action.icon}</span>
-                    <h4 className="font-bold text-gray-800">{action.category}</h4>
+                    <span className="text-2xl">{topic.icon}</span>
+                    <h4 className="font-bold text-gray-800">{topic.category}</h4>
                   </div>
                   <ul className="space-y-2">
-                    {action.items.map((item, i) => (
+                    {topic.items.map((item, i) => (
                       <li key={i} className="flex items-start gap-2 text-gray-700">
                         <span className="text-green-500 mt-1">✓</span>
                         <span className="text-sm">{item}</span>
@@ -313,16 +273,15 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Quick Actions */}
           <div className="px-6 pb-6">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-3">Quick Questions About 2010:</h4>
+              <h4 className="font-semibold text-blue-900 mb-3">Quick Questions:</h4>
               <div className="flex flex-wrap gap-2">
                 {[
-                  'What infrastructure projects were approved in 2010?',
-                  'What was the 2010 budget allocation?',
-                  'What youth programs started in 2010?',
-                  'What economic development happened in 2010?',
+                  'What environmental concerns have been raised about data centers?',
+                  'How do data centers impact Loudoun County traffic?',
+                  'What tax revenue do data centers generate?',
+                  'What public hearings have addressed data centers?',
                 ].map((question, i) => (
                   <button
                     key={i}
@@ -338,15 +297,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* All Years Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Chat Card */}
           <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
             <div className="text-4xl mb-4">💬</div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">AI Chat Assistant</h3>
-            <p className="text-gray-600 mb-4">Ask questions about any meeting minutes from 2010-2026. Get instant answers with citations.</p>
-            <button 
+            <p className="text-gray-600 mb-4">Ask questions about data center community and environmental impacts in Loudoun County.</p>
+            <button
               onClick={() => setShowChat(true)}
               className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
             >
@@ -354,39 +311,36 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Issues Card */}
           <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
             <div className="text-4xl mb-4">📋</div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Browse Issues</h3>
-            <p className="text-gray-600 mb-4">Explore all topics and decisions made by the Board. Filter by year and download PDFs.</p>
-            <Link 
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Browse Pages</h3>
+            <p className="text-gray-600 mb-4">Explore all ingested Loudoun County pages related to data centers.</p>
+            <Link
               href="/issues"
               className="block w-full px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-semibold transition-colors text-center"
             >
-              View Issues
+              View Pages
             </Link>
           </div>
 
-          {/* Archive Card */}
           <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
-            <div className="text-4xl mb-4">📚</div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Meeting Archive</h3>
-            <p className="text-gray-600 mb-4">Access all 354 meeting minutes from 2010-2026. Browse by year or search the wiki.</p>
-            <Link 
-              href="/wiki"
-              className="block w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors text-center"
+            <div className="text-4xl mb-4">🧠</div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">GBrain Q&A</h3>
+            <p className="text-gray-600 mb-4">Ask AI questions over selected GBrain categories from the full site crawl.</p>
+            <Link
+              href="/gbrain-chat"
+              className="block w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors text-center"
             >
-              View Archive
+              Open GBrain Chat
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-gray-900 text-gray-400 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
-          <p>Vance County Board of Commissioners Meeting Minutes Archive</p>
-          <p className="text-sm mt-2">2010-2026 • AI-Powered Analysis & Search</p>
+          <p>Loudoun County Data Center Research Knowledge Base</p>
+          <p className="text-sm mt-2">Community & Environmental Impact Analysis</p>
         </div>
       </footer>
     </main>

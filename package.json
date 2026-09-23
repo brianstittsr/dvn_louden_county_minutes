@@ -1,5 +1,5 @@
 {
-  "name": "vance-county-minutes",
+  "name": "loudoun-county-data-center-wiki",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,9 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "scrape": "node scripts/scrape.js",
+    "scrape": "tsx scripts/scrape-loudoun.ts",
     "wiki": "tsx scripts/generate-wikis.ts",
-    "process-all": "npm run scrape && npm run wiki"
+    "process-all": "npm run scrape && npm run wiki",
+    "gbrain:ingest": "tsx scripts/gbrain-ingest.ts",
+    "gbrain:crawl": "tsx scripts/gbrain-crawl.ts",
+    "gbrain:categories": "tsx scripts/gbrain-categories.ts",
+    "populate:loudoun": "tsx scripts/populate-loudoun-data.ts",
+    "extract:pdfs": "tsx scripts/extract-pdfs.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.65",

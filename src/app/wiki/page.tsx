@@ -3,100 +3,62 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-interface Meeting {
+interface WikiPage {
   id: string;
   title: string;
-  year: string;
-  date: string;
-  pdfUrl: string;
-  wikiUrl: string;
+  category: string;
+  url: string;
   summary: string;
+  environmentalConcerns: string[];
+  communityImpacts: string[];
+  dataCenterProjects: string[];
+  wikiUrl: string;
 }
 
-interface MeetingsByYear {
-  year: string;
-  meetings: Meeting[];
+interface PagesByCategory {
+  category: string;
+  pages: WikiPage[];
 }
 
 export default function WikiArchivePage() {
-  const [meetingsByYear, setMeetingsByYear] = useState<MeetingsByYear[]>([]);
+  const [pagesByCategory, setPagesByCategory] = useState<PagesByCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchMeetings();
+    fetchPages();
   }, []);
 
-  async function fetchMeetings() {
+  async function fetchPages() {
     try {
       const response = await fetch('/api/issues');
       const data = await response.json();
-      
-      if (data.success && data.issuesByYear) {
-        // Transform issues into meetings grouped by year
-        const yearMap = new Map<string, Meeting[]>();
-        
-        data.issuesByYear.forEach((yearData: any) => {
-          const year = yearData.year;
-          const meetings: Meeting[] = [];
-          
-          // Get unique meetings from issues
-          const seenMeetings = new Set<string>();
-          yearData.issues.forEach((issue: any) => {
-            const meetingKey = `${issue.year}-${issue.meetingFile}`;
-            if (!seenMeetings.has(meetingKey)) {
-              seenMeetings.add(meetingKey);
-              meetings.push({
-                id: meetingKey,
-                title: issue.meetingFile,
-                year: issue.year,
-                date: issue.meetingDate,
-                pdfUrl: issue.pdfUrl,
-                wikiUrl: issue.wikiUrl,
-                summary: issue.summary,
-              });
-            }
-          });
-          
-          if (meetings.length > 0) {
-            yearMap.set(year, meetings);
-          }
-        });
-        
-        // Convert to array sorted by year descending
-        const sorted = Array.from(yearMap.entries())
-          .map(([year, meetings]) => ({
-            year,
-            meetings: meetings.sort((a, b) => {
-              // Sort by date within year
-              return new Date(b.date).getTime() - new Date(a.date).getTime();
-            }),
-          }))
-          .sort((a, b) => parseInt(b.year) - parseInt(a.year));
-        
-        setMeetingsByYear(sorted);
+
+      if (data.success && data.pagesByCategory) {
+        setPagesByCategory(data.pagesByCategory);
       }
     } catch (error) {
-      console.error('Error fetching meetings:', error);
+      console.error('Error fetching pages:', error);
     } finally {
       setLoading(false);
     }
   }
 
-  // Filter meetings
-  const filteredMeetings = meetingsByYear.map(yearGroup => ({
-    ...yearGroup,
-    meetings: yearGroup.meetings.filter(meeting => {
-      const matchesYear = !selectedYear || meeting.year === selectedYear;
-      const matchesSearch = !searchTerm || 
-        meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        meeting.summary.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesYear && matchesSearch;
+  const filteredPages = pagesByCategory.map(categoryGroup => ({
+    ...categoryGroup,
+    pages: categoryGroup.pages.filter(page => {
+      const matchesCategory = !selectedCategory || page.category === selectedCategory;
+      const matchesSearch = !searchTerm ||
+        page.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        page.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        page.environmentalConcerns.some(c => c.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        page.communityImpacts.some(i => i.toLowerCase().includes(searchTerm.toLowerCase()));
+      return matchesCategory && matchesSearch;
     }),
-  })).filter(yearGroup => yearGroup.meetings.length > 0);
+  })).filter(categoryGroup => categoryGroup.pages.length > 0);
 
-  const allYears = meetingsByYear.map(y => y.year);
+  const allCategories = pagesByCategory.map(c => c.category);
 
   if (loading) {
     return (
@@ -111,16 +73,15 @@ export default function WikiArchivePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-gradient-to-r from-blue-900 to-blue-700 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold">Meeting Archive</h1>
-              <p className="text-blue-200 mt-1">Vance County Board of Commissioners Minutes (2010-2026)</p>
+              <h1 className="text-3xl font-bold">Wiki Archive</h1>
+              <p className="text-blue-200 mt-1">Loudoun County Data Center Knowledge Base</p>
             </div>
-            <Link 
-              href="/" 
+            <Link
+              href="/"
               className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg font-medium transition-colors"
             >
               ← Back to Home
@@ -129,14 +90,13 @@ export default function WikiArchivePage() {
         </div>
       </header>
 
-      {/* Filters */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <input
                 type="text"
-                placeholder="Search meetings..."
+                placeholder="Search pages..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -144,20 +104,20 @@ export default function WikiArchivePage() {
             </div>
             <div className="flex gap-2">
               <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">All Years</option>
-                {allYears.map(year => (
-                  <option key={year} value={year}>{year}</option>
+                <option value="">All Categories</option>
+                {allCategories.map(category => (
+                  <option key={category} value={category}>{category}</option>
                 ))}
               </select>
-              {(searchTerm || selectedYear) && (
+              {(searchTerm || selectedCategory) && (
                 <button
                   onClick={() => {
                     setSearchTerm('');
-                    setSelectedYear('');
+                    setSelectedCategory('');
                   }}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg"
                 >
@@ -169,63 +129,58 @@ export default function WikiArchivePage() {
         </div>
       </div>
 
-      {/* Archive List */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
-        {filteredMeetings.length === 0 ? (
+        {filteredPages.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <p className="text-gray-500">No meetings found matching your criteria.</p>
+            <p className="text-gray-500">No pages found matching your criteria.</p>
           </div>
         ) : (
           <div className="space-y-8">
-            {filteredMeetings.map((yearGroup) => (
-              <div key={yearGroup.year} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            {filteredPages.map((categoryGroup) => (
+              <div key={categoryGroup.category} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-xl font-bold text-gray-800">{yearGroup.year}</h2>
-                  <p className="text-sm text-gray-600">{yearGroup.meetings.length} meetings</p>
+                  <h2 className="text-xl font-bold text-gray-800 capitalize">{categoryGroup.category}</h2>
+                  <p className="text-sm text-gray-600">{categoryGroup.pages.length} pages</p>
                 </div>
-                
+
                 <div className="divide-y divide-gray-100">
-                  {yearGroup.meetings.map((meeting) => (
-                    <div key={meeting.id} className="p-6 hover:bg-gray-50 transition-colors">
+                  {categoryGroup.pages.map((page) => (
+                    <div key={page.id} className="p-6 hover:bg-gray-50 transition-colors">
                       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                         <div className="flex-1">
                           <h3 className="font-semibold text-gray-900 text-lg">
-                            {meeting.title}
+                            {page.title}
                           </h3>
                           <p className="text-sm text-gray-500 mt-1">
-                            {meeting.date}
+                            {page.url}
                           </p>
-                          {meeting.summary && meeting.summary !== 'Analysis failed. Please review original document.' && (
+                          {page.summary && (
                             <p className="text-gray-600 mt-2 text-sm line-clamp-2">
-                              {meeting.summary}
+                              {page.summary}
                             </p>
                           )}
                         </div>
-                        
+
                         <div className="flex gap-2 shrink-0">
                           <a
-                            href={meeting.pdfUrl}
-                            download
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            PDF
-                          </a>
-                          <a
-                            href={meeting.wikiUrl}
+                            href={page.url}
                             target="_blank"
                             rel="noopener noreferrer"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors"
+                          >
+                            Source
+                          </a>
+                          <Link
+                            href={page.wikiUrl}
                             className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition-colors"
                           >
                             Wiki
-                          </a>
+                          </Link>
                         </div>
                       </div>
                     </div>

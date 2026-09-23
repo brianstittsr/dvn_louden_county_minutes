@@ -2,177 +2,140 @@ import { NextResponse } from 'next/server';
 import * as fs from 'fs';
 import * as path from 'path';
 
-interface Issue {
+export interface WikiPage {
   id: string;
   title: string;
-  year: string;
-  meetingDate: string;
-  meetingFile: string;
+  category: string;
+  url: string;
   summary: string;
-  keyDecisions: string[];
-  actionItems: string[];
-  pdfUrl: string;
+  stakeholders: string[];
+  environmentalConcerns: string[];
+  communityImpacts: string[];
+  dataCenterProjects: string[];
   wikiUrl: string;
 }
 
-interface IssuesByYear {
-  year: string;
-  issues: Issue[];
+export interface PagesByCategory {
+  category: string;
+  pages: WikiPage[];
 }
 
-// Simple cache
-let cachedIssues: Issue[] | null = null;
-let cacheTimestamp: number = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+let cachedPages: WikiPage[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 5 * 60 * 1000;
 
-function extractIssuesFromWiki(wikiDir: string): Issue[] {
-  const issues: Issue[] = [];
-  
+function extractField(content: string, heading: string): string {
+  const regex = new RegExp(`## ${heading}\\n\\n([\\s\\S]+?)(?=\\n\\n## |$)`, 'i');
+  const match = content.match(regex);
+  return match ? match[1].trim() : '';
+}
+
+function extractList(content: string, heading: string): string[] {
+  const section = extractField(content, heading);
+  return section
+    .split('\n')
+    .filter(line => line.startsWith('- '))
+    .map(line => line.replace('- ', '').trim());
+}
+
+function extractPagesFromWikis(wikiDir: string): WikiPage[] {
+  const pages: WikiPage[] = [];
+
   if (!fs.existsSync(wikiDir)) {
     console.log('Wiki directory does not exist:', wikiDir);
-    return issues;
+    return pages;
   }
-  
-  const years = fs.readdirSync(wikiDir);
-  
-  for (const year of years) {
-    const yearPath = path.join(wikiDir, year);
-    if (!fs.statSync(yearPath).isDirectory()) continue;
-    
-    const files = fs.readdirSync(yearPath);
-    
+
+  const categories = fs.readdirSync(wikiDir);
+
+  for (const category of categories) {
+    const categoryPath = path.join(wikiDir, category);
+    if (!fs.statSync(categoryPath).isDirectory()) continue;
+
+    const files = fs.readdirSync(categoryPath);
+
     for (const file of files) {
       if (!file.endsWith('.md') || file === 'index.md') continue;
-      
+
       try {
-        const filePath = path.join(yearPath, file);
+        const filePath = path.join(categoryPath, file);
         const content = fs.readFileSync(filePath, 'utf-8');
-        
-        // Extract meeting metadata
+
         const titleMatch = content.match(/^# (.+)$/m);
-        const dateMatch = content.match(/\*\*Date:\*\* (.+)$/m);
-        const summaryMatch = content.match(/## Summary\n\n([\s\S]+?)(?=\n\n## |$)/);
-        
-        // Extract key decisions
-        const decisionsMatch = content.match(/## Key Decisions\n\n([\s\S]+?)(?=\n\n## |$)/);
-        const keyDecisions = decisionsMatch 
-          ? decisionsMatch[1].split('\n').filter(line => line.startsWith('- ')).map(l => l.replace('- ', ''))
-          : [];
-        
-        // Extract action items
-        const actionItemsMatch = content.match(/## Action Items\n\n([\s\S]+?)(?=\n\n## |$)/);
-        const actionItems = actionItemsMatch
-          ? actionItemsMatch[1].split('\n').filter(line => line.startsWith('- [ ]')).map(l => l.replace('- [ ] ', ''))
-          : [];
-        
-        // Extract topics as individual issues
-        const topicsMatch = content.match(/## Topics Discussed\n\n([\s\S]+?)(?=\n\n## |$)/);
-        const topics = topicsMatch
-          ? topicsMatch[1].split('\n').filter(line => line.startsWith('- ')).map(l => l.replace('- ', ''))
-          : [];
-        
-        // Create an issue entry for each topic
-        if (topics.length > 0) {
-          topics.forEach((topic, index) => {
-            const baseFileName = file.replace('.md', '');
-            issues.push({
-              id: `${year}-${baseFileName}-topic-${index}`,
-              title: topic,
-              year,
-              meetingDate: dateMatch ? dateMatch[1].trim() : '',
-              meetingFile: baseFileName.replace(/_/g, ' '),
-              summary: summaryMatch ? summaryMatch[1].slice(0, 300) + '...' : '',
-              keyDecisions: keyDecisions.slice(0, 3),
-              actionItems: actionItems.slice(0, 2),
-              pdfUrl: `/downloads/${year}/${baseFileName}.pdf`,
-              wikiUrl: `/wiki/${year}/${file}`,
-            });
-          });
-        }
-        
-        // Also create issues for key decisions if they don't overlap with topics
-        if (keyDecisions.length > 0 && topics.length === 0) {
-          keyDecisions.forEach((decision, index) => {
-            const baseFileName = file.replace('.md', '');
-            issues.push({
-              id: `${year}-${baseFileName}-decision-${index}`,
-              title: decision.slice(0, 100) + (decision.length > 100 ? '...' : ''),
-              year,
-              meetingDate: dateMatch ? dateMatch[1].trim() : '',
-              meetingFile: baseFileName.replace(/_/g, ' '),
-              summary: summaryMatch ? summaryMatch[1].slice(0, 300) + '...' : '',
-              keyDecisions: [decision],
-              actionItems: actionItems.slice(0, 2),
-              pdfUrl: `/downloads/${year}/${baseFileName}.pdf`,
-              wikiUrl: `/wiki/${year}/${file}`,
-            });
-          });
-        }
+        const urlMatch = content.match(/\*\*Source:\*\* \[([^\]]+)\]\(([^)]+)\)/);
+
+        const title = titleMatch?.[1] || file.replace(/_/g, ' ').replace('.md', '');
+        const url = urlMatch?.[2] || '';
+        const summary = extractField(content, 'Summary');
+
+        pages.push({
+          id: `${category}-${file}`,
+          title,
+          category,
+          url,
+          summary: summary.slice(0, 300) + (summary.length > 300 ? '...' : ''),
+          stakeholders: extractList(content, 'Stakeholders'),
+          environmentalConcerns: extractList(content, 'Environmental Concerns'),
+          communityImpacts: extractList(content, 'Community Impacts'),
+          dataCenterProjects: extractList(content, 'Data Center Projects'),
+          wikiUrl: `/wiki/${category}/${file}`,
+        });
       } catch (fileError) {
         console.error(`Error processing file ${file}:`, fileError);
       }
     }
   }
-  
-  return issues.sort((a, b) => {
-    // Sort by year descending, then by meeting date
-    if (a.year !== b.year) return parseInt(b.year) - parseInt(a.year);
-    return new Date(b.meetingDate).getTime() - new Date(a.meetingDate).getTime();
-  });
+
+  return pages.sort((a, b) => a.title.localeCompare(b.title));
 }
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const year = searchParams.get('year');
+    const category = searchParams.get('category');
     const search = searchParams.get('search');
-    
-    // Check cache
+
     const now = Date.now();
-    if (!cachedIssues || (now - cacheTimestamp) > CACHE_TTL) {
+    if (!cachedPages || (now - cacheTimestamp) > CACHE_TTL) {
       const wikiDir = path.join(process.cwd(), 'wiki');
-      cachedIssues = extractIssuesFromWiki(wikiDir);
+      cachedPages = extractPagesFromWikis(wikiDir);
       cacheTimestamp = now;
     }
-    
-    let issues = cachedIssues || [];
-    
-    // Filter by year if provided
-    if (year) {
-      issues = issues.filter(issue => issue.year === year);
+
+    let pages = cachedPages || [];
+
+    if (category) {
+      pages = pages.filter(page => page.category === category);
     }
-    
-    // Filter by search term if provided
+
     if (search) {
       const searchLower = search.toLowerCase();
-      issues = issues.filter(issue => 
-        issue.title.toLowerCase().includes(searchLower) ||
-        issue.summary.toLowerCase().includes(searchLower) ||
-        issue.meetingFile.toLowerCase().includes(searchLower)
+      pages = pages.filter(page =>
+        page.title.toLowerCase().includes(searchLower) ||
+        page.summary.toLowerCase().includes(searchLower) ||
+        page.environmentalConcerns.some(c => c.toLowerCase().includes(searchLower)) ||
+        page.communityImpacts.some(i => i.toLowerCase().includes(searchLower))
       );
     }
-    
-    // Get unique years for filtering
-    const years = Array.from(new Set(issues.map(i => i.year))).sort((a, b) => parseInt(b) - parseInt(a));
-    
-    // Group issues by year for the response
-    const issuesByYear: IssuesByYear[] = years.map(y => ({
-      year: y,
-      issues: issues.filter(i => i.year === y),
+
+    const categories = Array.from(new Set(pages.map(p => p.category))).sort();
+
+    const pagesByCategory: PagesByCategory[] = categories.map(c => ({
+      category: c,
+      pages: pages.filter(p => p.category === c),
     }));
-    
+
     return NextResponse.json({
       success: true,
-      totalIssues: issues.length,
-      years,
-      issuesByYear,
-      issues,
+      totalPages: pages.length,
+      categories,
+      pagesByCategory,
+      pages,
     });
   } catch (error) {
-    console.error('Error fetching issues:', error);
-    console.error('Error stack:', (error as Error).stack);
+    console.error('Error fetching pages:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch issues: ' + (error as Error).message },
+      { success: false, error: 'Failed to fetch pages: ' + (error as Error).message },
       { status: 500 }
     );
   }

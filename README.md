@@ -1,16 +1,15 @@
-# Vance County Minutes Chat
+# Loudoun County Data Center Wiki
 
-AI-powered chat interface for querying Vance County Board of Commissioners meeting minutes. This application scrapes meeting minutes from the Vance County website, processes them with AI, and provides an intelligent chat interface to ask questions about the content.
+AI-powered knowledge base and chat interface for Loudoun County, Virginia information related to data centers. This application ingests public county web pages, processes them with AI, and provides an intelligent chat interface to ask questions about data center community and environmental impacts.
 
 ## Features
 
-- **Web Scraping**: Automatically scrapes meeting minutes from the Vance County Board of Commissioners website
-- **Incremental Updates**: Only downloads new files since the last scrape (tracks last run time)
-- **PDF Processing**: Extracts text from PDF meeting minutes using pdfjs-dist
-- **Vector Search**: Uses OpenAI embeddings for semantic search across all meeting minutes
-- **AI Chat Interface**: Mobile-responsive chat interface to ask questions about meeting minutes
-- **Streaming Responses**: Real-time streaming of AI responses
+- **Web Ingestion**: Scrapes Loudoun County website search results for data center-related content
+- **Incremental Updates**: Tracks previously processed pages to avoid re-processing
 - **Karpathy-Style Wikis**: AI-generated markdown wikis for easy browsing and search
+- **AI Chat Interface**: Mobile-responsive chat interface to ask questions about the content
+- **Streaming Responses**: Real-time streaming of AI responses
+- **GBrain Integration**: Optional GBrain-backed knowledge graph for entity-rich Q&A
 
 ## Getting Started
 
@@ -19,6 +18,7 @@ AI-powered chat interface for querying Vance County Board of Commissioners meeti
 - Node.js 18.x or later
 - npm or yarn
 - OpenAI API key
+- Bun (for GBrain integration)
 
 ### Installation
 
@@ -50,115 +50,98 @@ npm run dev
 ```
 
 2. Open [http://localhost:3000](http://localhost:3000) in your browser
-3. Start chatting with the meeting minutes!
+3. Start chatting with the knowledge base!
 
-### Scraping Minutes
+### Ingesting Loudoun County Data Center Data
 
-To scrape the latest meeting minutes:
+> **Important**: The Loudoun County website (`loudoun.gov`) disallows automated crawling of `/Search` in its `robots.txt`. Before running any live scraper or crawler, ensure you have proper authorization from Loudoun County or use only manually supplied source documents.
+
+To fetch a curated set of public Loudoun County data-center pages, generate wikis, and ingest them into GBrain:
 
 ```bash
-curl -X POST http://localhost:3000/api/scrape
+npm run populate:loudoun
 ```
 
-Or use the web interface by navigating to the scrape endpoint.
+This command fetches directly linkable public pages (not the `/Search` endpoint), converts HTML/PDFs to markdown, runs AI analysis, builds Karpathy-style wiki pages, and loads everything into GBrain with embeddings.
 
-### Generating Wikis
+To extract PDFs specifically and ingest them into GBrain:
 
-To generate Karpathy-style wikis for all meeting minutes:
+```bash
+npm run extract:pdfs
+```
+
+To run the original scraper code (after verifying authorization):
+
+```bash
+npm run scrape
+```
+
+To generate wikis from the ingested pages:
 
 ```bash
 npm run wiki
 ```
 
-Or via API:
-
-```bash
-curl -X POST http://localhost:3000/api/wiki
-```
-
-To scrape new minutes AND generate wikis:
+To scrape and generate wikis in one step:
 
 ```bash
 npm run process-all
 ```
 
-The wikis will be created in the `wiki/` folder with:
-- `wiki/index.md` - Main navigation page
-- `wiki/{year}/index.md` - Year overview with meeting list
-- `wiki/{year}/{meeting}.md` - Individual meeting analysis
+### GBrain Integration
+
+[GBrain](https://github.com/garrytan/gbrain) is a personal knowledge brain that can ingest pages, extract entities, and answer structured questions.
+
+Install GBrain (requires Bun):
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+export PATH="$HOME/.bun/bin:$PATH"
+bun install -g github:garrytan/gbrain
+```
+
+Run GBrain ingestion (after verifying authorization):
+
+```bash
+npm run gbrain:ingest
+```
+
+Run a full site crawl into GBrain (after verifying authorization):
+
+```bash
+npm run gbrain:crawl
+```
+
+Use the `/gbrain-chat` page to ask AI questions over selected GBrain categories.
 
 ## Project Structure
 
-- `src/app/page.tsx`: Main chat interface (mobile-responsive)
-- `src/app/api/chat/route.ts`: Chat API with RAG (Retrieval-Augmented Generation)
-- `src/app/api/scrape/route.ts`: Web scraping API with incremental updates
-- `src/lib/pdf-processor.ts`: PDF text extraction utilities
-- `src/lib/vector-store.ts`: Vector database for semantic search
-- `src/lib/wiki-generator.ts`: Generates Karpathy-style markdown wikis from meeting minutes
-- `src/app/api/wiki/route.ts`: API endpoint to trigger wiki generation
-- `downloads/`: Directory where meeting minutes are saved (organized by year)
-- `wiki/`: Generated markdown wikis (organized by year)
+- `src/app/page.tsx`: Main chat interface
+- `src/app/gbrain-chat/page.tsx`: GBrain category Q&A page
+- `src/app/api/chat/route.ts`: Chat API with RAG
+- `src/app/api/scrape/loudoun/route.ts`: Loudoun search scraper API
+- `src/lib/scrapers/loudoun-search.ts`: Loudoun search result parser
+- `src/lib/wiki-generator-loudoun.ts`: Generates Karpathy-style markdown wikis
+- `scripts/populate-loudoun-data.ts`: Fetches curated public Loudoun pages and populates wikis + GBrain
+- `scripts/extract-pdfs.ts`: Extracts PDFs from DocumentCenter/LFPortal and ingests into GBrain
+- `src/app/api/wiki-file/[...path]/route.ts`: Serves generated wiki files
+- `downloads/`: Cached raw HTML/content files
+- `wiki/`: Generated markdown wikis
+- `data/`: Scraped metadata (search results, etc.)
+- `gbrain/`: GBrain project configuration and documentation
 
 ## How It Works
 
-1. **Scraping**: The application fetches the Vance County Board of Commissioners page, extracts year links, and downloads meeting minutes
-2. **Processing**: PDF files are processed and text is extracted
-3. **Indexing**: Text is chunked and embedded using OpenAI's embedding model
-4. **Chat**: When you ask a question, the system:
-   - Searches for relevant chunks using vector similarity
-   - Builds context from the most relevant meeting minutes
-   - Sends the question and context to GPT-4 for an intelligent response
-
-### Wiki Generation
-
-1. **Analysis**: New PDFs are analyzed by GPT-4 to extract:
-   - Meeting summaries
-   - Key decisions
-   - Action items
-   - Topics discussed
-   - Budget items
-   - Ordinances
-   - Public comments
-2. **Structure**: Content is organized into Karpathy-style markdown with:
-   - Clear hierarchical structure
-   - Cross-linking between meetings
-   - Year-based organization
-   - Search-friendly formatting
-3. **Navigation**: Automatic generation of:
-   - Year index pages
-   - Main wiki index
-   - Topic-based summaries
+1. **Ingestion**: The application fetches Loudoun County search results for `DATA CENTER`, paginates through all pages, and caches result pages.
+2. **Processing**: HTML is converted to markdown text and analyzed by AI.
+3. **Indexing**: Text is chunked and embedded using OpenAI's embedding model.
+4. **Chat**: When you ask a question, the system searches for relevant chunks using vector similarity and sends context to GPT-4.
+5. **Wiki Generation**: AI generates hierarchical markdown wikis with summaries, key decisions, and cross-links.
+6. **GBrain**: Optional knowledge graph ingestion for entity-based questions.
 
 ## Environment Variables
 
-- `OPENAI_API_KEY`: Your OpenAI API key (required for chat functionality)
-
-## Cron Job Setup
-
-To set up automatic scraping and wiki generation with a cron job, you can use a service like:
-
-- **Vercel Cron Jobs**: Add a cron job in `vercel.json`
-- **GitHub Actions**: Create a workflow file in `.github/workflows/`
-- **External cron service**: Use a service like cron-job.org to call the endpoints
-
-Example cron job configuration (runs daily at 2 AM):
-
-```json
-{
-  "crons": [
-    {
-      "path": "/api/scrape",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/wiki",
-      "schedule": "0 3 * * *"
-    }
-  ]
-}
-```
-
-This will scrape new minutes at 2 AM and generate wikis at 3 AM.
+- `OPENAI_API_KEY`: Your OpenAI API key (required for chat and wiki generation)
 
 ## License
 

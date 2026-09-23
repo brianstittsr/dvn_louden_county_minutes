@@ -5,42 +5,38 @@ import { processAllWikis, WikiDocument } from '@/lib/wiki-processor';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Simple in-memory cache for wiki documents
 let cachedWikis: WikiDocument[] | null = null;
 let cacheLoadTime = 0;
-const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+const CACHE_TTL = 10 * 60 * 1000;
 
 function loadWikis(): WikiDocument[] {
   const now = Date.now();
   if (cachedWikis && (now - cacheLoadTime) < CACHE_TTL) {
     return cachedWikis;
   }
-  
-  // Try multiple possible paths for the wiki directory
+
   const possiblePaths = [
     path.join(process.cwd(), 'wiki'),
     path.join(process.cwd(), '..', 'wiki'),
     path.join(process.cwd(), '.next', 'server', 'wiki'),
-    '/var/task/wiki', // Vercel serverless path
+    '/var/task/wiki',
   ];
-  
+
   let wikiDir = '';
   for (const tryPath of possiblePaths) {
-    console.log('Trying wiki path:', tryPath, 'exists:', fs.existsSync(tryPath));
     if (fs.existsSync(tryPath)) {
       wikiDir = tryPath;
       break;
     }
   }
-  
+
   if (!wikiDir) {
     console.error('Could not find wiki directory in any location');
-    // Return empty cache - will use fallback
     cachedWikis = [];
     cacheLoadTime = now;
     return cachedWikis;
   }
-  
+
   cachedWikis = processAllWikis(wikiDir);
   cacheLoadTime = now;
   console.log(`Loaded ${cachedWikis.length} wiki documents from ${wikiDir}`);
@@ -50,29 +46,28 @@ function loadWikis(): WikiDocument[] {
 function searchWikis(wikis: WikiDocument[], query: string, limit: number = 5) {
   const queryLower = query.toLowerCase();
   const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
-  
+
   const scored = wikis.map(wiki => {
     let score = 0;
-    const searchable = `${wiki.title} ${wiki.summary} ${wiki.topics.join(' ')} ${wiki.content}`.toLowerCase();
-    
-    // Full phrase match gets high score
+    const searchable = `${wiki.title} ${wiki.summary} ${wiki.content} ${wiki.stakeholders.join(' ')} ${wiki.dataCenterProjects.join(' ')} ${wiki.environmentalConcerns.join(' ')} ${wiki.communityImpacts.join(' ')}`.toLowerCase();
+
     if (searchable.includes(queryLower)) {
       score += 10;
     }
-    
-    // Individual word matches
+
     queryWords.forEach(word => {
       if (searchable.includes(word)) {
         score += 1;
-        // Bonus for title matches
         if (wiki.title.toLowerCase().includes(word)) score += 2;
-        if (wiki.topics.some(t => t.toLowerCase().includes(word))) score += 2;
+        if (wiki.environmentalConcerns.some(c => c.toLowerCase().includes(word))) score += 2;
+        if (wiki.communityImpacts.some(i => i.toLowerCase().includes(word))) score += 2;
+        if (wiki.dataCenterProjects.some(p => p.toLowerCase().includes(word))) score += 2;
       }
     });
-    
+
     return { wiki, score };
   });
-  
+
   return scored
     .filter(item => item.score > 0)
     .sort((a, b) => b.score - a.score)
@@ -83,7 +78,7 @@ function searchWikis(wikis: WikiDocument[], query: string, limit: number = 5) {
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
-    
+
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
         { error: 'Invalid messages format' },
@@ -94,47 +89,40 @@ export async function POST(req: Request) {
     const lastMessage = messages[messages.length - 1];
     const query = lastMessage.content;
 
-    // Load wikis (cached) - handle case where wiki directory doesn't exist
     let wikis: WikiDocument[] = [];
     let context = '';
-    
+
     try {
       wikis = loadWikis();
-      
-      // Search for relevant wikis
       const relevantWikis = searchWikis(wikis, query, 5);
-      
+
       if (relevantWikis.length === 0) {
         console.log('No relevant wikis found for query:', query);
       }
-      
-      // Build context from relevant wikis
+
       context = relevantWikis
         .map(wiki => {
           const content = wiki.content.slice(0, 3000);
-          return `Meeting: ${wiki.title} (${wiki.year}, ${wiki.meetingDate})\nSummary: ${wiki.summary}\nTopics: ${wiki.topics.join(', ')}\nKey Decisions: ${wiki.keyDecisions.join(', ')}\n\nContent:\n${content}`;
+          return `Page: ${wiki.title} (${wiki.category})\nURL: ${wiki.url}\nSummary: ${wiki.summary}\nEnvironmental concerns: ${wiki.environmentalConcerns.join(', ')}\nCommunity impacts: ${wiki.communityImpacts.join(', ')}\nData center projects: ${wiki.dataCenterProjects.join(', ')}\n\nContent:\n${content}`;
         })
         .join('\n\n---\n\n');
     } catch (wikiError) {
       console.error('Error loading wikis:', wikiError);
-      // Continue without wikis - will use fallback prompt
     }
 
-    const systemPrompt = context 
-      ? `You are a helpful assistant that answers questions about Vance County Board of Commissioners meeting minutes from 2010-2026.
+    const systemPrompt = context
+      ? `You are a helpful assistant that answers questions about Loudoun County, Virginia information related to data centers, with a focus on community and environmental impacts.
 
-Here are relevant meeting minutes to help answer the question:
+Here are relevant pages from the Loudoun County knowledge base to help answer the question:
 
 ${context}
 
-Use the information above to answer the user's question. Be specific and cite which meeting and year you're referencing.
+Use the information above to answer the user's question. Be specific and cite which page and source URL you're referencing.
 
 If the answer is not in the provided context, say so clearly.`
-      : `You are a helpful assistant for Vance County Board of Commissioners. 
+      : `You are a helpful assistant for Loudoun County, Virginia information related to data centers.
 
-Note: The meeting minutes database is currently being updated. You can provide general information about how county boards of commissioners typically operate, but specific meeting details from Vance County are not available at this moment.
-
-Please try again later or contact the county clerk's office for specific meeting information.`;
+Note: The knowledge base is currently being updated. You can provide general information about how county governments typically handle data center developments, but specific Loudoun County details are not available at this moment.`;
 
     const result = streamText({
       model: openai('gpt-4o'),
@@ -146,7 +134,7 @@ Please try again later or contact the county clerk's office for specific meeting
   } catch (error) {
     console.error('Error in chat API:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     return NextResponse.json(
       { error: 'Failed to process chat request: ' + errorMessage },
       { status: 500 }
